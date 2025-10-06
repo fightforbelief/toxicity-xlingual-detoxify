@@ -1,0 +1,74 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[numbers]{natbib}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\title{Multilingual Toxic Comment Detection:\\ Translated vs.\ Original-Language Training with \textit{Detoxify}}
+\author{CIS 530 Term Project Proposal\\[4pt]
+Team: \textit{Zixuan Bian, Aria Shi, Siyuan Shen, Alex Yang}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\paragraph{Motivation.}
+Online platforms must moderate harmful content in many languages, yet toxicity detectors trained only on English often fail cross-lingually. The \textit{Jigsaw Multilingual} challenge foregrounded this by evaluating models on non-English comments while most training resources were English \citep{kaggle2020multilingual}. We propose a focused, reproducible study comparing two practical strategies for multilingual toxicity: (i) training on \textbf{machine-translated (MT)} variants of English data and (ii) training on \textbf{original-language} labeled comments. This comparison matters for deployments balancing accuracy, fairness, and data coverage; \textit{Detoxify} provides public multilingual weights and training scripts for a strong baseline \citep{detoxify}, and the 2019 unintended-bias work provides nuanced group metrics we can adopt later if needed \citep{borkan2019nuanced}.
+
+\section*{What We Plan to Do}
+\paragraph{Problem and data (plan paragraph 1).}
+We target \textbf{binary toxicity} (score in $[0,1]$; thresholdable label) following the 2020 multilingual setup \citep{kaggle2020multilingual}. Concretely:
+\begin{itemize}
+    \item Use \textbf{Jigsaw 2018/2019 (English)} as core sources \citep{kaggle2018,kaggle2019}.
+    \item Use \textbf{Jigsaw 2020 Multilingual} labeled \texttt{validation.csv} to construct per-language splits (e.g., ES/IT/TR; 80/10/10), reserving a held-out test slice for each language \citep{kaggle2020multilingual}.
+    \item For the \textbf{MT regime}, leverage widely used machine-translated variants of the English corpus referenced during the 2020 competition; for the \textbf{original-language regime}, fine-tune directly on labeled non-English splits.
+\end{itemize}
+We will report ROC-AUC (primary) and F1 (secondary) \textit{per language} and macro-average across languages.
+
+\paragraph{Models, baselines, and evaluation (plan paragraph 2).}
+Our strong baseline is \textbf{Detoxify} (\texttt{unitaryai/detoxify}), which provides training scripts and multilingual checkpoints based on XLM-RoBERTa \citep{detoxify,conneau2020xlmr}. We will first \textbf{reproduce} Detoxify’s multilingual results on our splits. Then we implement two extensions: \textbf{Extension A (Translated)}—fine-tune with MT corpora; \textbf{Extension B (Original-language)}—fine-tune with in-language labeled data. As a \textbf{simple baseline}, we include a TF-IDF + Logistic Regression classifier per language. We provide a unified \texttt{score.py} that takes predictions + gold labels and outputs ROC-AUC/F1, plus a short error analysis (e.g., profanity-free toxicity, spelling noise) for representative languages.
+
+\begin{figure}[h]
+\centering
+\fbox{\begin{minipage}{0.92\linewidth}
+\small
+\textbf{ES (toxic)}: ``Vete de aqu\'i, nadie quiere leerte.'' $\rightarrow$ desired score $\approx 0.9$\\[2pt]
+\textbf{IT (non-toxic, identity mention)}: ``Sono gay e orgoglioso.'' $\rightarrow$ desired score $\approx 0.1$\\
+\textit{Illustrative examples for the presentation: a toxic insult vs.\ a neutral identity statement.}
+\end{minipage}}
+\caption{Example inputs and desired model behavior.}
+\end{figure}
+
+\section*{Inputs and Outputs}
+\textbf{Input:} raw comment text in language $\ell \in \{\text{ES, IT, TR, \ldots}\}$. \;
+\textbf{Output:} \texttt{toxicity} score $\in [0,1]$ (and optionally a binary label via a tuned threshold). We retain language tags for language-wise metrics.
+
+\section*{Data Sources \& Code We Will Use}
+\begin{itemize}
+    \item \textbf{Jigsaw datasets (Kaggle CLI).}
+\begin{verbatim}
+kaggle competitions download -c jigsaw-toxic-comment-classification-challenge   # 2018
+kaggle competitions download -c jigsaw-unintended-bias-in-toxicity-classification  # 2019
+kaggle competitions download -c jigsaw-multilingual-toxic-comment-classification   # 2020
+\end{verbatim}
+    \item \textbf{Detoxify (strong baseline + scripts)}: \url{https://github.com/unitaryai/detoxify} \citep{detoxify}
+\end{itemize}
+
+\section*{Planned Baselines and Extensions}
+\begin{itemize}
+    \item \textbf{Simple baseline:} TF-IDF + Logistic Regression (one-vs-rest), trained per language.
+    \item \textbf{Strong baseline (reproduction):} Detoxify multilingual (XLM-R) on our splits \citep{detoxify,conneau2020xlmr}.
+    \item \textbf{Extension A (Translated):} fine-tune using machine-translated English$\rightarrow$target-language data; evaluate per language.
+    \item \textbf{Extension B (Original-language):} fine-tune using original-language labeled data from Jigsaw 2020; evaluate per language \citep{kaggle2020multilingual}.
+\end{itemize}
+
+\section*{Evaluation and Deliverables}
+\textbf{Metrics:} ROC-AUC (primary), F1 (secondary), per-language + macro average. \;
+\textbf{Artifacts:} \texttt{score.py}, \texttt{simple-baseline.py}, Detoxify training configs, and a short \texttt{README} with exact run commands. \;
+\textbf{Error analysis:} 6–10 annotated cases per language.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+\end{document}
