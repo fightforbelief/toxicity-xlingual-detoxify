@@ -1,0 +1,9 @@
+torch>=2.1
+transformers>=4.42
+datasets>=2.19
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+pytorch-lightning>=2.3
+tqdm>=4.66
+textattack>=0.3.8
