@@ -1,0 +1,163 @@
+# Configuration overrides for original-language runs
+# This extends the base detoxify_multilingual.yaml config
+
+# Inherit from base config
+_base_: "detoxify_multilingual.yaml"
+
+# Data configuration for original regime
+data:
+  # Use original language training data
+  train_data:
+    type: "original"
+    languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+    base_dir: "data/processed"
+  
+  # Validation and test in same languages
+  val_data:
+    type: "original"
+    languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+  
+  test_data:
+    type: "original"
+    languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+
+# Model configuration for original regime
+model:
+  name: "detoxify_original"
+  
+  # Use original Detoxify model
+  base_model: "unitary/toxic-bert"
+  
+  # Standard training parameters
+  batch_size: 16
+  learning_rate: 2e-5
+  num_epochs: 3
+  
+  # Language-specific fine-tuning
+  per_language_finetuning: true
+  language_adapters: true
+  
+  # Model architecture
+  max_length: 512
+  dropout: 0.1
+
+# Training configuration for original regime
+training:
+  output_dir: "output/runs/original"
+  
+  # Standard training setup
+  train_batch_size: 16
+  eval_batch_size: 32
+  
+  # Learning rate scheduling
+  learning_rate_schedule: "linear"
+  warmup_ratio: 0.1
+  
+  # Regularization
+  label_smoothing: 0.0
+  dropout: 0.1
+  
+  # Evaluation
+  eval_strategy: "steps"
+  eval_steps: 500
+  save_strategy: "steps"
+  save_steps: 1000
+  
+  # Mixed precision
+  fp16: true
+  
+  # Gradient clipping
+  max_grad_norm: 1.0
+
+# Data processing for original regime
+preprocessing:
+  # Standard text cleaning
+  remove_urls: true
+  remove_mentions: true
+  remove_hashtags: false
+  
+  # Language detection
+  detect_language: true
+  min_confidence: 0.9  # High confidence for original language data
+  
+  # Text normalization
+  lowercase: false
+  normalize_unicode: true
+  
+  # Language-specific preprocessing
+  language_specific_cleaning: true
+
+# Evaluation configuration
+evaluation:
+  output_dir: "output/predictions/original"
+  
+  # Standard evaluation
+  cross_lingual_eval: false
+  
+  # Language-specific evaluation
+  per_language_evaluation: true
+  
+  # Metrics
+  metrics: ["roc_auc", "f1", "precision", "recall", "accuracy"]
+
+# Logging for original regime
+logging:
+  tensorboard_dir: "output/runs/original/tensorboard"
+  
+  wandb:
+    enabled: true
+    project: "toxicity-xlingual-detoxify"
+    run_name: "original_regime"
+    tags: ["original", "multilingual", "detoxify"]
+
+# Hardware configuration
+hardware:
+  # Standard configuration
+  batch_size: 16
+  gradient_accumulation_steps: 1
+  
+  # Memory optimization
+  dataloader_pin_memory: true
+  dataloader_num_workers: 4
+
+# Language-specific configurations
+languages:
+  en:
+    # English-specific settings
+    model_name: "unitary/toxic-bert"
+    learning_rate: 2e-5
+    
+  es:
+    # Spanish-specific settings
+    model_name: "dccuchile/bert-base-spanish-wwm-uncased"
+    learning_rate: 1e-5
+    
+  fr:
+    # French-specific settings
+    model_name: "dbmdz/bert-base-french-cased"
+    learning_rate: 1e-5
+    
+  de:
+    # German-specific settings
+    model_name: "dbmdz/bert-base-german-cased"
+    learning_rate: 1e-5
+    
+  it:
+    # Italian-specific settings
+    model_name: "dbmdz/bert-base-italian-cased"
+    learning_rate: 1e-5
+    
+  pt:
+    # Portuguese-specific settings
+    model_name: "neuralmind/bert-base-portuguese-cased"
+    learning_rate: 1e-5
+    
+  ru:
+    # Russian-specific settings
+    model_name: "DeepPavlov/rubert-base-cased"
+    learning_rate: 1e-5
+    
+  tr:
+    # Turkish-specific settings
+    model_name: "dbmdz/bert-base-turkish-cased"
+    learning_rate: 1e-5

@@ -1,0 +1,119 @@
+# Configuration overrides for translated-regime runs
+# This extends the base detoxify_multilingual.yaml config
+
+# Inherit from base config
+_base_: "detoxify_multilingual.yaml"
+
+# Data configuration for translated regime
+data:
+  # Use translated training data
+  train_data:
+    type: "translated"
+    manifest_file: "data/processed/translation_manifest.json"
+    base_dir: "data/translated"
+  
+  # Validation and test remain in original languages
+  val_data:
+    type: "original"
+    languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+  
+  test_data:
+    type: "original"
+    languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+
+# Model configuration for translated regime
+model:
+  name: "detoxify_translated"
+  
+  # Use multilingual BERT for better cross-lingual understanding
+  base_model: "bert-base-multilingual-cased"
+  
+  # Adjust training parameters for translated data
+  batch_size: 12  # Smaller batch size due to longer sequences
+  learning_rate: 1e-5  # Lower learning rate for fine-tuning
+  num_epochs: 5  # More epochs for better adaptation
+  
+  # Language-specific parameters
+  max_length: 256  # Shorter max length for efficiency
+  
+  # Cross-lingual training
+  cross_lingual_attention: true
+  language_embedding: true
+
+# Training configuration for translated regime
+training:
+  output_dir: "output/runs/translated"
+  
+  # Data loading
+  train_batch_size: 12
+  eval_batch_size: 32
+  
+  # Learning rate scheduling
+  learning_rate_schedule: "cosine"
+  warmup_ratio: 0.1
+  
+  # Regularization for translated data
+  label_smoothing: 0.1
+  dropout: 0.2
+  
+  # Evaluation
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  
+  # Mixed precision
+  fp16: true
+  
+  # Gradient clipping
+  max_grad_norm: 1.0
+
+# Data processing for translated regime
+preprocessing:
+  # Text cleaning for translated text
+  remove_urls: true
+  remove_mentions: true
+  remove_hashtags: false
+  
+  # Language-specific preprocessing
+  detect_language: true
+  min_confidence: 0.7  # Lower threshold for translated text
+  
+  # Text normalization
+  lowercase: false
+  normalize_unicode: true
+  
+  # Translation-specific cleaning
+  remove_translation_artifacts: true
+  normalize_whitespace: true
+
+# Evaluation configuration
+evaluation:
+  output_dir: "output/predictions/translated"
+  
+  # Cross-lingual evaluation
+  cross_lingual_eval: true
+  
+  # Language-specific thresholds
+  per_language_thresholds: true
+  
+  # Additional metrics for translated regime
+  metrics: ["roc_auc", "f1", "precision", "recall", "accuracy", "balanced_accuracy"]
+
+# Logging for translated regime
+logging:
+  tensorboard_dir: "output/runs/translated/tensorboard"
+  
+  wandb:
+    enabled: true
+    project: "toxicity-xlingual-detoxify"
+    run_name: "translated_regime"
+    tags: ["translated", "multilingual", "detoxify"]
+
+# Hardware configuration
+hardware:
+  # Adjust for potentially larger models
+  batch_size: 12
+  gradient_accumulation_steps: 2
+  
+  # Memory optimization
+  dataloader_pin_memory: true
+  dataloader_num_workers: 2

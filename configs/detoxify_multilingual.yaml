@@ -1,0 +1,109 @@
+# Base configuration for multilingual toxicity detection using Detoxify
+# Copy from Detoxify and edit paths for this project
+
+# Data configuration
+data:
+  path: "data"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
+  
+  # Jigsaw 2020 data files
+  jigsaw:
+    validation_file: "data/raw/validation.csv"
+    test_file: "data/raw/test.csv"
+  
+  # Translated data
+  translated:
+    manifest_file: "data/processed/translation_manifest.json"
+    base_dir: "data/translated"
+
+# Model configuration
+model:
+  name: "detoxify_multilingual"
+  base_model: "unitary/toxic-bert"  # Original Detoxify model
+  
+  # Training parameters
+  batch_size: 16
+  learning_rate: 2e-5
+  num_epochs: 3
+  max_length: 512
+  
+  # Model architecture
+  dropout: 0.1
+  num_labels: 1  # Binary classification
+  
+  # Optimization
+  warmup_steps: 500
+  weight_decay: 0.01
+  adam_epsilon: 1e-8
+
+# Training configuration
+training:
+  output_dir: "output/runs"
+  logging_dir: "output/runs/logs"
+  save_steps: 1000
+  eval_steps: 500
+  save_total_limit: 3
+  
+  # Early stopping
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  
+  # Mixed precision
+  fp16: true
+  
+  # Gradient accumulation
+  gradient_accumulation_steps: 1
+
+# Evaluation configuration
+evaluation:
+  metrics: ["roc_auc", "f1", "precision", "recall", "accuracy"]
+  output_dir: "output/predictions"
+  
+  # Threshold optimization
+  optimize_threshold: true
+  threshold_metric: "f1"
+
+# Data processing
+preprocessing:
+  # Text cleaning
+  remove_urls: true
+  remove_mentions: true
+  remove_hashtags: false
+  
+  # Language detection
+  detect_language: true
+  min_confidence: 0.8
+  
+  # Text normalization
+  lowercase: false  # Keep original case for better performance
+  normalize_unicode: true
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # TensorBoard
+  tensorboard_dir: "output/runs/tensorboard"
+  
+  # Weights & Biases (optional)
+  wandb:
+    enabled: false
+    project: "toxicity-xlingual-detoxify"
+    entity: null
+
+# Hardware configuration
+hardware:
+  device: "auto"  # auto, cpu, cuda, mps
+  num_workers: 4
+  pin_memory: true
+  
+  # Multi-GPU
+  distributed: false
+  local_rank: -1
+
+# Reproducibility
+seed: 42
+deterministic: true
