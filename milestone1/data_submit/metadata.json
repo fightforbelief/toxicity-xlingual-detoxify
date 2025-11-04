@@ -1,0 +1,40 @@
+{
+  "generated_at": "2025-11-04T14:53:28",
+  "source_dir": "/Users/alex/Desktop/data/jigsaw-multilingual-toxic-comment-classification",
+  "random_seed": 42,
+  "sampling": {
+    "strategy": "stratified",
+    "label_column": "toxic",
+    "threshold_for_target": null,
+    "sample_cap_rows": 20000,
+    "sample_fraction": 0.05,
+    "train_total_rows": 223549,
+    "train_sample_rows": 11178
+  },
+  "files": [
+    {
+      "name": "train_sample.csv",
+      "size_bytes": 4783118,
+      "size_human": "4.6 MB",
+      "sha256": "e58efd992dc2a7162f490023137171b29da97fb5651857bc46b8584fdffa3e77"
+    },
+    {
+      "name": "dev.csv",
+      "size_bytes": 3178555,
+      "size_human": "3.0 MB",
+      "sha256": "298183523e5bf04ee91ade5721ba6a48a63c25b984de564dbd447f992c9e835a"
+    },
+    {
+      "name": "test.csv",
+      "size_bytes": 28783206,
+      "size_human": "27.4 MB",
+      "sha256": "100e8d00e208141b34ab923c7bc1fd31d264fe21592495c3d98c89fa24fe9cd0"
+    },
+    {
+      "name": "test_labels.csv",
+      "size_bytes": 499395,
+      "size_human": "487.7 KB",
+      "sha256": "73f1e954dc85f05a39ade7fed6dedbb7e148453e0c6d8f0b3346bb2d685cf7cf"
+    }
+  ]
+}

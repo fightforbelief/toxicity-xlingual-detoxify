@@ -32,9 +32,6 @@ Team: \textit{Zixuan Bian, Aria Shi, Siyuan Shen, Alex Yang}}
 
 \section{Data Description}
 
-\noindent Our project builds upon publicly available datasets used in multilingual toxicity and offensive language detection research. The goal is to assemble a balanced, cross-lingual corpus that enables a systematic comparison between \emph{original-language} and \emph{translation-based} training pipelines. Below we summarize the key data sources, preprocessing steps, and translation methodology.
-
-\subsection*{1. Source Datasets}
 We rely primarily on two open datasets widely used for toxicity and offensive language classification:
 
 \begin{itemize}
@@ -42,21 +39,7 @@ We rely primarily on two open datasets widely used for toxicity and offensive la
     \item \textbf{Multilingual Jigsaw / Toxicity 2020 extensions}: We incorporate the multilingual extension introduced by UnitaryAI’s \texttt{Detoxify} repository, which includes comment-level annotations for seven languages (English, Spanish, Portuguese, Italian, French, Turkish, and Russian). These datasets were translated and quality-checked by the Jigsaw team to facilitate multilingual benchmarking.\footnote{\url{https://github.com/unitaryai/detoxify}}
 \end{itemize}
 
-\subsection*{2. Translation and Alignment}
-For languages without existing labeled data, we generate translated variants of the Civil Comments corpus using the \texttt{Google Cloud Translation API (v3)}. Following prior work such as \citet{ranasinghe2020multilingual} and \citet{perez2022crosslingualtoxicity}, we prepare four data conditions for controlled comparison:
-\begin{enumerate}
-    \item \textbf{Original–Original (OO):} Train and test in the same original language.
-    \item \textbf{Original–Translated (OT):} Train on original-language data, test on machine-translated target-language data.
-    \item \textbf{Translated–Translated (TT):} Train and test entirely on machine-translated data.
-    \item \textbf{Translated–Original (TO):} Train on machine-translated data, test back on original-language samples.
-\end{enumerate}
-This setup mirrors the experimental matrix in \citet{dmonte2024translationbias}, allowing us to isolate how MT quality and language shift affect toxicity classification performance. All translations are post-processed to normalize punctuation and remove untranslatable markup (URLs, emoji, code-switching fragments).
-
-\subsection*{3. Preprocessing and Sampling}
-To ensure label balance and manageable size for multilingual fine-tuning, we subsample 100k–150k comments per language, stratified by toxicity label and source domain. Non-textual comments (e.g., URLs only) are discarded. Texts are lowercased, tokenized using the \texttt{XLM-R} tokenizer, and truncated to 256 tokens. For each translation pair (English $\leftrightarrow$ target language), we store aligned IDs to allow contrastive or consistency evaluation between versions.
-
-\subsection*{4. Evaluation Splits}
-We reserve 80\% of data for training, 10\% for validation, and 10\% for held-out testing, following the partitioning scheme used in the Detoxify benchmarks. Evaluation metrics include macro-F1, ROC-AUC, and subgroup AUC (for identity terms), ensuring comparability with existing multilingual toxicity research.
+Other details please check data.md attached.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
