@@ -191,3 +191,10 @@ experimental:
   ensemble:
     enabled: false
     models: []
+
+# Baseline TF-IDF + Logistic Regression specific options
+preprocess:
+  lower: true
+  strip_urls: true
+  strip_mentions: true
+  deaccent: true
