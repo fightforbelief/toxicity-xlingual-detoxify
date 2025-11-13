@@ -1,109 +1,193 @@
-# Base configuration for multilingual toxicity detection using Detoxify
-# Copy from Detoxify and edit paths for this project
-
 # Data configuration
 data:
-  path: "data"
+  # Base paths
+  root_dir: "data"
   raw_dir: "data/raw"
   processed_dir: "data/processed"
+  
+  # Supported languages
   languages: ["en", "es", "fr", "de", "it", "pt", "ru", "tr"]
   
-  # Jigsaw 2020 data files
+  # Jigsaw 2020 Multilingual dataset
   jigsaw:
-    validation_file: "data/raw/validation.csv"
-    test_file: "data/raw/test.csv"
+    train_file: "data/raw/jigsaw-2020/jigsaw-toxic-comment-train.csv"
+    validation_file: "data/raw/jigsaw-2020/validation.csv"
+    test_file: "data/raw/jigsaw-2020/test.csv"
+    
+    # Data columns
+    text_column: "comment_text"
+    label_column: "toxic"
+    lang_column: "lang"
   
-  # Translated data
+  # Dataset split ratios (for original language approach)
+  split:
+    train: 0.8
+    val: 0.1
+    test: 0.1
+  
+  # Translated data (for translation approach)
   translated:
+    enabled: false  # Set to true when using translation approach
     manifest_file: "data/processed/translation_manifest.json"
     base_dir: "data/translated"
 
 # Model configuration
 model:
   name: "detoxify_multilingual"
-  base_model: "unitary/toxic-bert"  # Original Detoxify model
   
-  # Training parameters
-  batch_size: 16
+  # Base model selection (choose one)
+  base_model: "xlm-roberta-base"  # Recommended for multilingual
+  # base_model: "bert-base-multilingual-cased"  # Alternative
+  # base_model: "unitary/multilingual-toxic-xlm-roberta"  # Detoxify pretrained
+  
+  # Model parameters
+  num_labels: 1  # Binary classification (toxic or not)
+  max_length: 512
+  dropout: 0.1
+  
+  # Training hyperparameters
+  batch_size: 16  # Adjust based on GPU memory
   learning_rate: 2e-5
   num_epochs: 3
-  max_length: 512
   
-  # Model architecture
-  dropout: 0.1
-  num_labels: 1  # Binary classification
-  
-  # Optimization
+  # Optimizer settings
   warmup_steps: 500
   weight_decay: 0.01
   adam_epsilon: 1e-8
+  max_grad_norm: 1.0
 
 # Training configuration
 training:
+  # Output directories
   output_dir: "output/runs"
   logging_dir: "output/runs/logs"
+  checkpoint_dir: "output/runs/checkpoints"
+  
+  # Checkpoint strategy
+  save_strategy: "steps"
   save_steps: 1000
-  eval_steps: 500
   save_total_limit: 3
   
+  # Evaluation strategy
+  evaluation_strategy: "steps"
+  eval_steps: 500
+  
   # Early stopping
-  early_stopping_patience: 3
-  early_stopping_threshold: 0.001
+  early_stopping:
+    enabled: true
+    patience: 3
+    threshold: 0.001
+    metric: "roc_auc"
   
-  # Mixed precision
-  fp16: true
-  
-  # Gradient accumulation
+  # Performance optimization
+  fp16: true  # Mixed precision training (requires CUDA)
   gradient_accumulation_steps: 1
+  dataloader_num_workers: 4
+  
+  # Gradient clipping
+  max_grad_norm: 1.0
 
 # Evaluation configuration
 evaluation:
+  # Metrics to compute
   metrics: ["roc_auc", "f1", "precision", "recall", "accuracy"]
+  
+  # Output settings
   output_dir: "output/predictions"
+  save_predictions: true
   
   # Threshold optimization
   optimize_threshold: true
   threshold_metric: "f1"
+  default_threshold: 0.5
 
-# Data processing
+# Preprocessing configuration
 preprocessing:
   # Text cleaning
   remove_urls: true
   remove_mentions: true
   remove_hashtags: false
+  remove_extra_spaces: true
   
   # Language detection
   detect_language: true
-  min_confidence: 0.8
+  min_language_confidence: 0.8
   
   # Text normalization
-  lowercase: false  # Keep original case for better performance
+  lowercase: false  # Keep original case
   normalize_unicode: true
+  remove_non_printable: true
+  
+  # Filtering
+  min_text_length: 10
+  max_text_length: 5000
 
 # Logging configuration
 logging:
   level: "INFO"
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   
+  # Console logging
+  console_output: true
+  
+  # File logging
+  file_output: true
+  log_file: "output/runs/training.log"
+  
   # TensorBoard
-  tensorboard_dir: "output/runs/tensorboard"
+  tensorboard:
+    enabled: true
+    log_dir: "output/runs/tensorboard"
   
   # Weights & Biases (optional)
   wandb:
     enabled: false
     project: "toxicity-xlingual-detoxify"
     entity: null
+    run_name: null
 
 # Hardware configuration
 hardware:
-  device: "auto"  # auto, cpu, cuda, mps
-  num_workers: 4
-  pin_memory: true
+  # Device selection
+  device: "auto"  # auto, cpu, cuda:0, mps
   
-  # Multi-GPU
+  # Multi-GPU training
   distributed: false
   local_rank: -1
+  
+  # Memory optimization
+  pin_memory: true
+  prefetch_factor: 2
 
 # Reproducibility
 seed: 42
 deterministic: true
+
+# Approaches (choose one or compare both)
+approach:
+  # Original language: train on native language data
+  original:
+    enabled: true
+  
+  # Translation: train on translated English data
+  translated:
+    enabled: false
+    source_lang: "en"
+    translation_engine: "google"  # google, deepl, mbart
+
+# Experimental features (optional)
+experimental:
+  # Class imbalance handling
+  class_weights: false
+  focal_loss: false
+  
+  # Data augmentation
+  augmentation:
+    enabled: false
+    back_translation: false
+    synonym_replacement: false
+  
+  # Ensemble methods
+  ensemble:
+    enabled: false
+    models: []
