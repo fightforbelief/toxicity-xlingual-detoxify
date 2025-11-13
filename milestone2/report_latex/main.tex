@@ -1,0 +1,159 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[numbers]{natbib}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\usepackage{booktabs}
+
+\title{Multilingual Toxic Comment Detection:\\ Translated vs.\ Original-Language Training with \textit{Detoxify}}
+\author{CIS 5300 Milestone 2\\[4pt]
+Team: \textit{Zixuan Bian, Aria Shi, Siyuan Shen, Alex Yang}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Task and Data Overview}
+
+Our term project studies \emph{multilingual toxicity detection} on a collection of Jigsaw toxicity datasets.
+The goal is to classify a comment as \emph{toxic} or \emph{non-toxic} in several languages (English, Spanish, Italian, and Turkish).
+The Detoxify model we use as a strong baseline was originally introduced for toxicity detection in online comments~\citep{detoxify}, and our multilingual setting is closely related to prior work on cross-lingual language models such as XLM-RoBERTa~\citep{xlmr}.
+
+For each language $\ell \in \{\text{en}, \text{es}, \text{it}, \text{tr}\}$, we construct train/validation/test splits from a common pool of annotated comments.
+All experiments are performed in a unified code base, and all models output a scalar toxicity probability per comment.
+
+\section{Evaluation Metrics}
+
+We treat toxicity detection as a binary classification task.
+For a given language and test set, let $y_i \in \{0,1\}$ denote the gold label for example $i$, and let $\hat{p}_i \in [0,1]$ be the model's predicted toxicity probability.
+Given a threshold $\tau$, we define the binary prediction
+\[
+\hat{y}_i = \mathbf{1}[\hat{p}_i \ge \tau].
+\]
+From the resulting confusion matrix we obtain
+\[
+TP, FP, TN, FN \in \mathbb{N},
+\]
+the usual numbers of true positives, false positives, true negatives, and false negatives.
+
+All metrics are implemented using the \texttt{scikit-learn} library~\citep{sklearn}.
+
+\subsection{ROC--AUC (primary metric)}
+
+Our primary metric is the area under the receiver operating characteristic curve (ROC--AUC).
+The ROC curve plots
+\[
+\mathrm{TPR}(\tau) = \frac{TP(\tau)}{TP(\tau)+FN(\tau)}, \qquad
+\mathrm{FPR}(\tau) = \frac{FP(\tau)}{FP(\tau)+TN(\tau)}
+\]
+for all thresholds $\tau \in [0,1]$.
+ROC--AUC summarizes this curve into a single number between 0 and 1.
+Intuitively, it is the probability that a randomly chosen toxic comment receives a higher score than a randomly chosen non-toxic comment.
+We use the implementation in \texttt{sklearn.metrics.roc\_auc\_score}.
+
+\subsection{Precision, Recall, and F1 (secondary metrics)}
+
+Given a fixed threshold $\tau$ and the induced predictions $\hat{y}_i$, we compute
+\[
+\mathrm{Precision} = \frac{TP}{TP + FP}, \qquad
+\mathrm{Recall} = \frac{TP}{TP + FN},
+\]
+and the F1 score
+\[
+\mathrm{F1} = \frac{2 \cdot \mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}.
+\]
+We also report accuracy, specificity, and false positive/negative rates for error analysis, but ROC--AUC and F1 are the main metrics we use to compare models.
+
+\subsection{Macro and Micro Averaging Across Languages}
+
+For each language $\ell$ we compute a scalar metric $m_\ell$ (e.g., ROC--AUC or F1).
+The macro average over languages is
+\[
+m_{\text{macro}} = \frac{1}{|\mathcal{L}|} \sum_{\ell \in \mathcal{L}} m_\ell,
+\]
+which treats all languages equally.
+For the micro average, we concatenate all predictions across languages and recompute the metrics on this combined set, which weights languages by their number of examples.
+
+\section{Baselines}
+
+\subsection{Simple Baseline: TF--IDF + Logistic Regression}
+
+Our simple baseline is a strong traditional model: a per-language TF--IDF + Logistic Regression classifier.
+For each language, we:
+
+\begin{itemize}
+    \item preprocess the text (lowercasing, URL and mention removal, optional stopword removal);
+    \item vectorize comments with a word-level TF--IDF model (1--2 grams, up to 200k features);
+    \item train a Logistic Regression classifier with balanced class weights and \texttt{max\_iter = 2000};
+    \item tune a decision threshold on the validation set to maximize F1.
+\end{itemize}
+
+At test time, the model outputs a probability $\hat{p}_i$ and a binarized prediction $\hat{y}_i$ for each comment.
+Table~\ref{tab:baseline} summarizes the test-set performance.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Language & ROC-AUC & F1 & Precision & Recall & Accuracy\\
+\midrule
+en & 0.9686 & 0.7371 & 0.7339 & 0.7404 & 0.9495\\
+es & 0.8604 & 0.6067 & 0.5745 & 0.6429 & 0.8606\\
+it & 0.8430 & 0.5192 & 0.4909 & 0.5510 & 0.8008\\
+tr & 0.9569 & 0.7368 & 0.8400 & 0.6562 & 0.9500\\
+\midrule
+macro & 0.9072 & 0.6500 & 0.6598 & 0.6476 & 0.8902\\
+\bottomrule
+\end{tabular}
+\caption{TF--IDF + Logistic Regression baseline on the test set.}
+\label{tab:baseline}
+\end{table}
+
+The baseline achieves strong ROC--AUC on English and Turkish, with reasonably high F1.
+Performance on Spanish and Italian is lower, reflecting smaller dataset sizes and potential domain shift, and leaves room for improvement with stronger models.
+
+\subsection{Strong Baseline: Detoxify Multilingual XLM--R}
+
+Our strong baseline is the multilingual Detoxify model~\citep{detoxify}, which uses an XLM--RoBERTa transformer~\citep{xlmr} to produce toxicity scores.
+We load the pretrained \texttt{Detoxify("multilingual")} checkpoint and apply it to our processed validation and test splits in each language.
+
+For each language, we:
+
+\begin{itemize}
+    \item run Detoxify to obtain a toxicity probability $\hat{p}_i$ for each comment;
+    \item tune a threshold on the validation set to maximize F1;
+    \item evaluate on the test set using the same ROC--AUC and F1 metrics as above.
+\end{itemize}
+
+Table~\ref{tab:detoxify} reports the resulting performance.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Language & ROC-AUC & F1 & Precision & Recall & Accuracy\\
+\midrule
+en & 0.9889 & 0.8238 & 0.8244 & 0.8232 & 0.9663\\
+es & 0.9184 & 0.6154 & 0.8696 & 0.4762 & 0.9004\\
+it & 0.8756 & 0.5584 & 0.4095 & 0.8776 & 0.7291\\
+tr & 0.9824 & 0.8219 & 0.7317 & 0.9375 & 0.9567\\
+\midrule
+macro & 0.9413 & 0.7049 & 0.7088 & 0.7786 & 0.8881\\
+\bottomrule
+\end{tabular}
+\caption{Detoxify multilingual XLM--R strong baseline on the test set.}
+\label{tab:detoxify}
+\end{table}
+
+Compared to the TF--IDF baseline, Detoxify consistently improves ROC--AUC in all languages (macro ROC--AUC increases from $0.91$ to $0.94$) and F1 (macro F1 increases from $0.65$ to $0.70$).
+The gains are especially large for English and Turkish.
+For Spanish, Detoxify achieves much higher precision but somewhat lower recall, while for Italian it trades precision for very high recall.
+Overall, the transformer-based strong baseline provides a substantially stronger starting point for future model improvements.
+
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
