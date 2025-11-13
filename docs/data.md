@@ -1,155 +1,183 @@
-# Data Documentation
+# Data Documentation (Updated)
 
 ## Overview
 
-This project uses the **Jigsaw Multilingual Toxic Comment Classification** dataset from Kaggle, which provides labeled toxic comments in 8 languages: English, Spanish, French, German, Italian, Portuguese, Russian, and Turkish.
+This project uses the **Jigsaw 2020 Multilingual Toxic Comment Classification** dataset. **Important**: The original dataset contains only **4 languages** (English, Spanish, Italian, Turkish), not the 8 languages initially planned.
 
 ## Data Source
 
-### Primary Dataset: Jigsaw 2020 Multilingual Toxic Comment Classification
+### Jigsaw 2020 Multilingual Toxic Comment Classification
 
 - **Competition URL**: https://www.kaggle.com/c/jigsaw-multilingual-toxic-comment-classification
-- **Download Command**:
-  ```bash
-  kaggle competitions download -c jigsaw-multilingual-toxic-comment-classification
-  ```
-- **License**: The dataset is provided under the [CC0: Public Domain](https://creativecommons.org/publicdomain/zero/1.0/) license
-- **Citation**:
-  ```
-  Jigsaw/Conversation AI. (2020). Jigsaw Multilingual Toxic Comment Classification.
-  Kaggle. https://kaggle.com/competitions/jigsaw-multilingual-toxic-comment-classification
-  ```
+- **License**: CC0: Public Domain
+- **Actual Languages Available**: 4 (en, es, it, tr)
 
-### Dataset Components
+## Dataset Structure (Actual)
 
-The original dataset consists of:
+### What's Actually in the Dataset
 
-1. **English Training Data** (`jigsaw-toxic-comment-train.csv`)
-   - ~224,000 English comments with toxicity labels
-   - Binary classification: toxic (1) or non-toxic (0)
+```
+Jigsaw 2020 Download:
+├── jigsaw-toxic-comment-train.csv
+│   └── ~224,000 English samples with toxicity labels
+│
+├── validation.csv
+│   ├── Spanish (es):  2,500 samples
+│   ├── Italian (it):  2,500 samples
+│   └── Turkish (tr):  3,000 samples
+│   └── Total: 8,000 multilingual validation samples
+│
+└── test.csv
+    └── Unlabeled test set (not used in this project)
+```
 
-2. **Multilingual Validation Data** (`validation.csv`)
-   - ~8,000 comments across 7 languages (excluding English from training)
-   - ~1,000 samples per language
-   - Languages: English (en), Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt), Russian (ru), Turkish (tr)
+### Languages NOT in the Dataset
 
-3. **Test Data** (`test.csv`)
-   - Unlabeled test set for competition submission
-   - Not used in this project
+The following languages are **NOT available** in Jigsaw 2020:
+- ❌ French (fr)
+- ❌ German (de)
+- ❌ Portuguese (pt)
+- ❌ Russian (ru)
+
+**To train models for these languages**, you need to:
+1. Use the **Translation Approach** (translate English data)
+2. Find external datasets for these languages
+3. Use cross-lingual transfer learning
+
+## Actual Dataset Statistics
+
+### Sample Counts by Language (After Processing)
+
+| Language | Source | Train | Val | Test | Held-out | Total | Toxic % |
+|----------|--------|-------|-----|------|----------|-------|---------|
+| **English (en)** | train.csv + val subset | 156,484 | 22,355 | 22,355 | 22,355 | 223,549 | 9.6% |
+| **Spanish (es)** | validation.csv | 1,749 | 250 | 251 | 250 | 2,500 | 16.9% |
+| **Italian (it)** | validation.csv | 1,749 | 250 | 251 | 250 | 2,500 | 19.5% |
+| **Turkish (tr)** | validation.csv | 2,099 | 301 | 300 | 300 | 3,000 | 10.7% |
+| **TOTAL** | | **162,081** | **23,156** | **23,157** | **23,155** | **231,549** | ~10% |
+
+### Data Distribution Insights
+
+1. **English Dominance**:
+   - 223,549 samples (96.5% of total)
+   - Highly imbalanced: only 9.6% toxic
+   - Rich training data enables strong models
+
+2. **Non-English Languages**:
+   - 8,000 samples total (3.5% of total)
+   - More balanced: 10-20% toxic
+   - Small datasets limit performance potential
+
+3. **Class Distribution Difference**:
+   - English: 9.6% toxic (natural distribution)
+   - Spanish: 16.9% toxic
+   - Italian: 19.5% toxic
+   - Turkish: 10.7% toxic
 
 ## Data Processing
 
-### Split Strategy
+### Split Strategy (70/10/10/10)
 
-We apply a **70/10/10/10** split strategy for each language:
+For each language:
+1. **Train (70%)**: Model training
+2. **Val (10%)**: Hyperparameter tuning, threshold optimization
+3. **Test (10%)**: Final evaluation
+4. **Held-out (10%)**: Future analysis, cross-validation
 
-- **Train Set (70%)**: For model training
-- **Validation Set (10%)**: For hyperparameter tuning and model selection
-- **Test Set (10%)**: For final model evaluation
-- **Held-out Set (10%)**: Reserved for future analysis and cross-validation
+### English Data Processing
 
-### Processing Pipeline
+**Special handling** for English:
+1. Load `jigsaw-toxic-comment-train.csv` (~224k samples)
+2. Extract English subset from `validation.csv` (~1k samples)
+3. Combine both sources
+4. Apply 70/10/10/10 split
+5. Result: 223,549 total samples
 
-1. **Load Raw Data**:
-   - English: Combine training set + English validation subset
-   - Other Languages: Extract from multilingual validation set
+### Non-English Data Processing
 
-2. **Stratified Splitting**:
-   - Maintain class distribution (toxic vs. non-toxic) across all splits
-   - Random seed: 42 (for reproducibility)
+For Spanish, Italian, Turkish:
+1. Extract language subset from `validation.csv`
+2. Apply 70/10/10/10 split
+3. Result: ~2,500-3,000 samples per language
 
-3. **Output Structure**:
-   ```
-   data/processed/
-   ├── en/
-   │   ├── train.csv
-   │   ├── val.csv
-   │   ├── test.csv
-   │   └── heldout.csv
-   ├── es/
-   │   ├── train.csv
-   │   ├── val.csv
-   │   ├── test.csv
-   │   └── heldout.csv
-   ...
-   └── dataset_summary.csv
-   ```
+## Baseline Model Performance
 
-## Dataset Statistics
+### Achieved Results (TF-IDF + LogReg)
 
-### Sample Counts by Language and Split
+#### Without Stopwords
 
-> **Note**: The exact numbers will be generated after running the data splitting script. Below are expected ranges based on the original dataset distribution.
+| Language | Test ROC-AUC | Test F1 | Test Precision | Test Recall | Threshold |
+|----------|--------------|---------|----------------|-------------|-----------|
+| en       | **0.9709**   | 0.7448  | 0.7293        | 0.7610     | 0.650     |
+| es       | 0.8700       | 0.6364  | 0.6087        | 0.6667     | 0.470     |
+| it       | 0.8534       | 0.5500  | 0.4648        | 0.6735     | 0.440     |
+| tr       | **0.9628**   | 0.6667  | 0.5814        | 0.7812     | 0.450     |
 
-| Language | Split    | Expected Samples | Toxic Count | Toxic Ratio (%) |
-|----------|----------|------------------|-------------|-----------------|
-| English  | Train    | ~157,000         | ~14,300     | ~9.1%          |
-| English  | Val      | ~22,500          | ~2,000      | ~9.1%          |
-| English  | Test     | ~22,500          | ~2,000      | ~9.1%          |
-| English  | Held-out | ~22,500          | ~2,000      | ~9.1%          |
-| Spanish  | Train    | ~700             | ~350        | ~50%           |
-| Spanish  | Val      | ~100             | ~50         | ~50%           |
-| Spanish  | Test     | ~100             | ~50         | ~50%           |
-| Spanish  | Held-out | ~100             | ~50         | ~50%           |
-| French   | Train    | ~700             | ~350        | ~50%           |
-| French   | Val      | ~100             | ~50         | ~50%           |
-| French   | Test     | ~100             | ~50         | ~50%           |
-| French   | Held-out | ~100             | ~50         | ~50%           |
-| German   | Train    | ~700             | ~350        | ~50%           |
-| German   | Val      | ~100             | ~50         | ~50%           |
-| German   | Test     | ~100             | ~50         | ~50%           |
-| German   | Held-out | ~100             | ~50         | ~50%           |
-| Italian  | Train    | ~700             | ~350        | ~50%           |
-| Italian  | Val      | ~100             | ~50         | ~50%           |
-| Italian  | Test     | ~100             | ~50         | ~50%           |
-| Italian  | Held-out | ~100             | ~50         | ~50%           |
-| Portuguese| Train   | ~700             | ~350        | ~50%           |
-| Portuguese| Val     | ~100             | ~50         | ~50%           |
-| Portuguese| Test    | ~100             | ~50         | ~50%           |
-| Portuguese| Held-out| ~100             | ~50         | ~50%           |
-| Russian  | Train    | ~700             | ~350        | ~50%           |
-| Russian  | Val      | ~100             | ~50         | ~50%           |
-| Russian  | Test     | ~100             | ~50         | ~50%           |
-| Russian  | Held-out | ~100             | ~50         | ~50%           |
-| Turkish  | Train    | ~700             | ~350        | ~50%           |
-| Turkish  | Val      | ~100             | ~50         | ~50%           |
-| Turkish  | Test     | ~100             | ~50         | ~50%           |
-| Turkish  | Held-out | ~100             | ~50         | ~50%           |
+#### With Stopwords
 
-### Total Statistics Summary
+| Language | Test ROC-AUC | Test F1 | Test Precision | Test Recall | Threshold |
+|----------|--------------|---------|----------------|-------------|-----------|
+| en       | **0.9686**   | 0.7371  | 0.7339        | 0.7404     | 0.680     |
+| es       | 0.8604       | 0.6067  | 0.5745        | 0.6429     | 0.470     |
+| it       | 0.8430       | 0.5192  | 0.4909        | 0.5510     | 0.470     |
+| tr       | **0.9569**   | 0.7368  | 0.8400        | 0.6562     | 0.570     |
 
-| Metric                    | Value                |
-|---------------------------|----------------------|
-| **Total Languages**       | 8                    |
-| **Total Samples**         | ~231,000             |
-| **English Samples**       | ~224,500 (97%)       |
-| **Non-English Samples**   | ~7,000 (3%)          |
-| **Overall Toxic Ratio**   | ~10.5%               |
-| **English Toxic Ratio**   | ~9.1%                |
-| **Non-English Toxic Ratio** | ~50%               |
+### Performance Analysis
 
-### Class Distribution Notes
+**English**:
+- Excellent ROC-AUC (0.97+)
+- Large dataset enables strong discrimination
+- Stopwords: minimal impact (-0.002 ROC-AUC)
 
-1. **English Data**:
-   - **Highly imbalanced**: ~9% toxic, ~91% non-toxic
-   - Reflects real-world distribution of toxic content
-   - Large dataset size allows for effective minority class learning
+**Turkish**:
+- Surprisingly excellent ROC-AUC (0.96+)
+- Despite small dataset (3k samples)
+- Better with stopwords for precision (0.84)
 
-2. **Non-English Data**:
-   - **Balanced**: ~50% toxic, ~50% non-toxic
-   - Validation set was deliberately balanced for fair evaluation
-   - Smaller dataset size (~1,000 samples per language)
+**Spanish & Italian**:
+- Good ROC-AUC (0.84-0.87)
+- Limited by small dataset size
+- Room for improvement with more data
 
-3. **Implications**:
-   - English models need strategies for imbalanced learning (e.g., class weights, focal loss)
-   - Non-English models can use standard training approaches
-   - Cross-lingual transfer learning is crucial for low-resource languages
+## Expanding to 8 Languages
+
+### Missing Languages Strategy
+
+To train models for French, German, Portuguese, and Russian:
+
+#### Option 1: Translation Approach ✅
+1. Translate English training data to target languages
+2. Use Google Translate API, DeepL, or MBART
+3. Train models on translated data
+4. **Pros**: Large training sets, consistent labels
+5. **Cons**: Translation quality, "translationese" effect
+
+#### Option 2: External Datasets
+1. Find toxicity datasets in target languages
+2. Examples:
+   - German: GermEval 2018/2019
+   - French: French toxic comment datasets
+   - Portuguese: Brazilian Portuguese datasets
+3. **Pros**: Natural language, cultural relevance
+4. **Cons**: Different label definitions, smaller size
+
+#### Option 3: Cross-lingual Transfer ✅
+1. Train multilingual BERT/XLM-RoBERTa on English
+2. Fine-tune on small target language data
+3. Leverage cross-lingual embeddings
+4. **Pros**: State-of-the-art performance
+5. **Cons**: Requires GPU, more complex
+
+### Recommended Approach
+
+**For this project**: Use Option 1 (Translation Approach)
+- Translate English training data (224k samples) to each language
+- Provides consistent training data across all languages
+- Enables fair comparison between original and translated approaches
 
 ## Data Format
 
 ### CSV Structure
-
-All split files follow this format:
 
 ```csv
 comment_text,toxic,lang
@@ -159,167 +187,191 @@ comment_text,toxic,lang
 
 ### Column Descriptions
 
-| Column         | Type    | Description                                    |
-|----------------|---------|------------------------------------------------|
-| `comment_text` | string  | The text content of the comment               |
-| `toxic`        | integer | Binary label: 1 = toxic, 0 = non-toxic       |
-| `lang`         | string  | ISO 639-1 language code (en, es, fr, etc.)   |
+| Column | Type | Description |
+|--------|------|-------------|
+| `comment_text` | string | Comment text content |
+| `toxic` | integer | Binary label: 1 = toxic, 0 = non-toxic |
+| `lang` | string | ISO 639-1 code (en, es, it, tr) |
 
 ### Language Codes
 
-| Code | Language   | Native Name  |
-|------|------------|--------------|
-| en   | English    | English      |
-| es   | Spanish    | Español      |
-| fr   | French     | Français     |
-| de   | German     | Deutsch      |
-| it   | Italian    | Italiano     |
-| pt   | Portuguese | Português    |
-| ru   | Russian    | Русский      |
-| tr   | Turkish    | Türkçe       |
+| Code | Language | Available | Samples |
+|------|----------|-----------|---------|
+| en   | English    | ✅ | 223,549 |
+| es   | Spanish    | ✅ | 2,500 |
+| it   | Italian    | ✅ | 2,500 |
+| tr   | Turkish    | ✅ | 3,000 |
+| fr   | French     | ❌ | Need translation |
+| de   | German     | ❌ | Need translation |
+| pt   | Portuguese | ❌ | Need translation |
+| ru   | Russian    | ❌ | Need translation |
 
-## Data Quality
-
-### Quality Assurance
-
-1. **Label Quality**:
-   - Labels were provided by Jigsaw/Conversation AI
-   - Based on human annotations
-   - Some label noise is expected (inherent in human judgment)
-
-2. **Text Quality**:
-   - Comments are from real online discussions
-   - May contain typos, slang, and informal language
-   - Unicode characters are preserved
-
-3. **Language Detection**:
-   - Language labels are provided in the dataset
-   - Our pipeline includes optional language detection verification
-
-### Known Issues
-
-1. **Data Imbalance**:
-   - English: heavily imbalanced (9% toxic)
-   - Other languages: balanced (50% toxic) but small sample size
-
-2. **Translation Quality**:
-   - Non-English validation samples were translated from English
-   - May not reflect natural native language patterns
-   - "Translationese" effect possible
-
-3. **Cultural Differences**:
-   - Toxicity definitions may vary across cultures
-   - Some expressions toxic in one language may be acceptable in another
-
-## Reproducing the Data Splits
+## Reproducing Data Splits
 
 ### Prerequisites
 
 ```bash
-# Install required packages
-pip install pandas numpy scikit-learn pyyaml
-
 # Download Jigsaw 2020 data
 kaggle competitions download -c jigsaw-multilingual-toxic-comment-classification
 unzip jigsaw-multilingual-toxic-comment-classification.zip -d data/raw/jigsaw-2020/
 ```
 
-### Run the Splitting Script
+### Create Splits
 
 ```bash
-# Default split (70/10/10/10)
-python code/scripts/make_multilingual_splits.py \
-    --config configs/detoxify_multilingual.yaml
-
-# Custom split ratios
+# For available languages only
 python code/scripts/make_multilingual_splits.py \
     --config configs/detoxify_multilingual.yaml \
-    --train_ratio 0.8 \
-    --val_ratio 0.1 \
-    --test_ratio 0.05 \
-    --heldout_ratio 0.05
-
-# Specific languages only
-python code/scripts/make_multilingual_splits.py \
-    --config configs/detoxify_multilingual.yaml \
-    --languages en es fr
+    --languages en es it tr
 ```
 
-### Verification
-
-After running the script, verify the splits:
+### Verify Data
 
 ```bash
-# Check output structure
-ls data/processed/
-
-# View summary statistics
-cat data/processed/dataset_summary.csv
-
-# Quick sample count check
-wc -l data/processed/en/*.csv
+# Check what's available
+python code/scripts/check_data.py
 ```
 
-## Additional Data Sources (Optional)
+Expected output:
+```
+✅ Found validation file: data/raw/jigsaw-2020/validation.csv
+Total samples: 8000
 
-### Historical Jigsaw Datasets
+LANGUAGE DISTRIBUTION IN VALIDATION SET
+es  :  2500 samples ( 422 toxic,  16.9%)
+it  :  2500 samples ( 488 toxic,  19.5%)
+tr  :  3000 samples ( 320 toxic,  10.7%)
 
-These are **not required** but can be used for additional training data or comparison:
+⚠️  MISSING LANGUAGES:
+  - de
+  - en (in separate train file)
+  - fr
+  - pt
+  - ru
 
-1. **Jigsaw 2018**: Toxic Comment Classification Challenge
-   - URL: https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
-   - ~160,000 English comments with multi-label toxicity categories
+PROCESSED DATA AVAILABILITY
+✅ en: Total: 223549 samples
+✅ es: Total: 2500 samples
+✅ it: Total: 2500 samples
+✅ tr: Total: 3000 samples
+```
 
-2. **Jigsaw 2019**: Unintended Bias in Toxicity Classification
-   - URL: https://www.kaggle.com/c/jigsaw-unintended-bias-in-toxicity-classification
-   - ~1,800,000 English comments with bias-related metadata
+## Data Quality Considerations
 
-### External Translation Resources
+### Known Limitations
 
-For the **translation approach**, you may need:
+1. **Limited Language Coverage**:
+   - Only 4 languages natively available
+   - Missing major languages (fr, de, pt, ru)
 
-- **Google Translate API**: For automatic translation
-- **DeepL API**: Higher quality translations (paid)
-- **MBART**: Facebook's multilingual translation model
+2. **Dataset Size Imbalance**:
+   - English: 223k samples (97%)
+   - Other languages: 2-3k samples each (3%)
+   - Huge disparity affects cross-lingual comparison
+
+3. **Class Imbalance**:
+   - English: 9.6% toxic (realistic)
+   - Others: 10-20% toxic (artificially balanced)
+   - Different distributions require different strategies
+
+4. **Translation Origin**:
+   - Non-English validation samples were machine-translated from English
+   - May not reflect natural toxic language in those languages
+   - Cultural context may be lost
+
+### Implications for Modeling
+
+1. **English Models**:
+   - Large dataset → strong performance expected
+   - Class imbalance → need balanced class weights
+   - Threshold optimization crucial
+
+2. **Non-English Models**:
+   - Small datasets → overfitting risk
+   - More balanced → standard training works
+   - Transfer learning recommended
+
+3. **Cross-lingual Transfer**:
+   - English model can help bootstrap other languages
+   - Multilingual BERT essential for missing languages
+   - Zero-shot transfer possible but less accurate
+
+## Future Data Expansion
+
+### Translation Pipeline (Planned)
+
+```bash
+# Translate English data to target languages
+python code/scripts/translate_data.py \
+    --source en \
+    --targets fr de pt ru \
+    --method google  # or deepl, mbart
+```
+
+### Expected Results
+
+With translation approach:
+- **French**: ~224k translated samples
+- **German**: ~224k translated samples
+- **Portuguese**: ~224k translated samples
+- **Russian**: ~224k translated samples
+
+This will enable:
+- Fair comparison between original and translated data
+- Consistent training set sizes across all languages
+- Better models for missing languages
 
 ## Data Privacy and Ethics
 
-### Privacy Considerations
+### Privacy
+- All comments are from public online discussions
+- Personal information anonymized by Jigsaw
+- No PII included
 
-- All comments are **publicly available** online discussions
-- Personal information has been **anonymized** by Jigsaw
-- No user IDs or personally identifiable information included
-
-### Ethical Use
-
-1. **Purpose**: This dataset should be used for research and development of toxicity detection systems
-2. **Limitations**: Models trained on this data may not generalize to all contexts
-3. **Bias**: Be aware of potential biases in the training data
-4. **Impact**: Consider the social impact of deploying toxicity detection systems
+### Ethical Considerations
+- Content contains offensive language
+- Handle with care for mental health
+- Consider bias in training data
+- Toxicity definitions vary across cultures
 
 ### Content Warning
 
-⚠️ **Warning**: This dataset contains offensive, toxic, and potentially disturbing language. The content includes profanity, hate speech, threats, and other harmful content. Handle with care and consider the mental health of team members working with this data.
+⚠️ **Warning**: This dataset contains:
+- Profanity and hate speech
+- Threats and harassment
+- Other harmful content
 
 ## References
 
-1. Jigsaw/Conversation AI. (2020). Jigsaw Multilingual Toxic Comment Classification. Kaggle. https://kaggle.com/competitions/jigsaw-multilingual-toxic-comment-classification
+1. Jigsaw/Conversation AI. (2020). Jigsaw Multilingual Toxic Comment Classification. Kaggle.
+   https://www.kaggle.com/c/jigsaw-multilingual-toxic-comment-classification
 
-2. Borkan, D., Dixon, L., Sorensen, J., Thain, N., & Vasserman, L. (2019). Nuanced metrics for measuring unintended bias with real data for text classification. In Companion Proceedings of The 2019 World Wide Web Conference (pp. 491-500).
+2. Ranasinghe, T., & Zampieri, M. (2020). Multilingual Offensive Language Identification with Cross-lingual Embeddings. EMNLP 2020.
 
-3. Dixon, L., Li, J., Sorensen, J., Thain, N., & Vasserman, L. (2018). Measuring and mitigating unintended bias in text classification. In Proceedings of the 2018 AAAI/ACM Conference on AI, Ethics, and Society (pp. 67-73).
+3. Caselli, T., et al. (2021). HateBERT: Retraining BERT for Abusive Language Detection in English. ACL 2021.
 
-## Updates and Changelog
+## Summary
 
-### Version 1.0 (2024-01-XX)
+### What We Have
+✅ **4 languages** with native data (en, es, it, tr)  
+✅ **231,549 total samples**  
+✅ **Strong baseline models** (0.84-0.97 ROC-AUC)  
+✅ **Complete data pipeline**  
 
-- Initial data documentation
-- Processed Jigsaw 2020 multilingual dataset
-- Created 70/10/10/10 splits for 8 languages
-- Generated dataset summary statistics
+### What We Need
+⚠️ **4 languages** require translation (fr, de, pt, ru)  
+⚠️ **Translation approach** implementation  
+⚠️ **Cross-lingual evaluation** framework  
+
+### Next Steps
+1. ✅ Complete baseline models for available languages
+2. 🔄 Implement translation pipeline
+3. 🔄 Train models on translated data
+4. 🔄 Compare original vs. translated approaches
+5. 🔄 Implement multilingual BERT models
 
 ---
 
 **Last Updated**: 2025-11-13
-**Maintainer**: Alex Yang
-**Contact**: hanqing.yang189@gmail.com
+**Status**: 4/8 languages available with native data  
+**Recommendation**: Proceed with translation approach for missing languages

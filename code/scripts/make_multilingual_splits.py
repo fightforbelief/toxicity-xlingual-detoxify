@@ -1,3 +1,10 @@
+"""
+Create 80/10/10 train/dev/test splits + held-out test from Jigsaw 2020 data.
+
+For English: Use train.csv + validation subset
+For other languages: Use validation.csv with language filtering
+"""
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
