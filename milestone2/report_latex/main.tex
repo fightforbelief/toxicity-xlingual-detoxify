@@ -1,19 +1,33 @@
 \documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.8in]{geometry}
 \usepackage[numbers]{natbib}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
 \usepackage{microtype}
 \usepackage{booktabs}
+\usepackage{titlesec}
+\setlength{\parskip}{0.4em}
+\titlespacing*{\section}{0pt}{0.7em}{0.3em}
+\titlespacing*{\subsection}{0pt}{0.5em}{0.2em}
 
-\title{Multilingual Toxic Comment Detection:\\ Translated vs.\ Original-Language Training with \textit{Detoxify}}
-\author{CIS 5300 Milestone 2\\[4pt]
-Team: \textit{Zixuan Bian, Aria Shi, Siyuan Shen, Alex Yang}}
-\date{\today}
 
+\usepackage{titling}
+\setlength{\droptitle}{-6em}   % pull title upward
+\title{\vspace{-1.5em}
+Multilingual Toxic Comment Detection:\\
+Translated vs.\ Original-Language Training with \textit{Detoxify}\\[-3em]
+}
+\author{
+CIS 5300 M2 \quad
+\textit{Zixuan Bian \quad Aria Shi \quad Siyuan Shen \quad Alex Yang} \\
+November 20, 2025 \\[-0.3em]
+}
+\date{}
 \begin{document}
 \maketitle
+\vspace{-5em}
+
 
 \section{Task and Data Overview}
 
@@ -28,15 +42,8 @@ All experiments are performed in a unified code base, and all models output a sc
 
 We treat toxicity detection as a binary classification task.
 For a given language and test set, let $y_i \in \{0,1\}$ denote the gold label for example $i$, and let $\hat{p}_i \in [0,1]$ be the model's predicted toxicity probability.
-Given a threshold $\tau$, we define the binary prediction
-\[
-\hat{y}_i = \mathbf{1}[\hat{p}_i \ge \tau].
-\]
-From the resulting confusion matrix we obtain
-\[
-TP, FP, TN, FN \in \mathbb{N},
-\]
-the usual numbers of true positives, false positives, true negatives, and false negatives.
+Given a threshold $\tau$, we define the binary prediction $ \hat{y}_i = \mathbf{1}[\hat{p}_i \ge \tau]$.
+From the resulting confusion matrix we obtain $ TP, FP, TN, FN \in \mathbb{N}$, the usual numbers of true positives, false positives, true negatives, and false negatives.
 
 All metrics are implemented using the \texttt{scikit-learn} library~\citep{sklearn}.
 
@@ -57,13 +64,11 @@ We use the implementation in \texttt{sklearn.metrics.roc\_auc\_score}.
 
 Given a fixed threshold $\tau$ and the induced predictions $\hat{y}_i$, we compute
 \[
-\mathrm{Precision} = \frac{TP}{TP + FP}, \qquad
-\mathrm{Recall} = \frac{TP}{TP + FN},
+\mathrm{Precision}=\frac{TP}{TP+FP},\quad
+\mathrm{Recall}=\frac{TP}{TP+FN},\quad
+\mathrm{F1}=\frac{2\,\mathrm{Precision}\,* \mathrm{Recall}}{\mathrm{Precision}+\mathrm{Recall}}.
 \]
-and the F1 score
-\[
-\mathrm{F1} = \frac{2 \cdot \mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}.
-\]
+
 We also report accuracy, specificity, and false positive/negative rates for error analysis, but ROC--AUC and F1 are the main metrics we use to compare models.
 
 \subsection{Macro and Micro Averaging Across Languages}
@@ -80,15 +85,8 @@ For the micro average, we concatenate all predictions across languages and recom
 
 \subsection{Simple Baseline: TF--IDF + Logistic Regression}
 
-Our simple baseline is a strong traditional model: a per-language TF--IDF + Logistic Regression classifier.
-For each language, we:
+Our simple baseline is a traditional TF--IDF + Logistic Regression classifier trained separately for each language. We lowercase the text, remove URLs and mentions, and represent each comment with word-level TF--IDF features (1--2 grams, up to 200k dimensions). We then train a Logistic Regression model with balanced class weights and \texttt{max\_iter=2000}, select the decision threshold that maximizes F1 on the validation set, and evaluate on the test set.
 
-\begin{itemize}
-    \item preprocess the text (lowercasing, URL and mention removal, optional stopword removal);
-    \item vectorize comments with a word-level TF--IDF model (1--2 grams, up to 200k features);
-    \item train a Logistic Regression classifier with balanced class weights and \texttt{max\_iter = 2000};
-    \item tune a decision threshold on the validation set to maximize F1.
-\end{itemize}
 
 At test time, the model outputs a probability $\hat{p}_i$ and a binarized prediction $\hat{y}_i$ for each comment.
 Table~\ref{tab:baseline} summarizes the test-set performance.
@@ -116,16 +114,8 @@ Performance on Spanish and Italian is lower, reflecting smaller dataset sizes an
 
 \subsection{Strong Baseline: Detoxify Multilingual XLM--R}
 
-Our strong baseline is the multilingual Detoxify model~\citep{detoxify}, which uses an XLM--RoBERTa transformer~\citep{xlmr} to produce toxicity scores.
-We load the pretrained \texttt{Detoxify("multilingual")} checkpoint and apply it to our processed validation and test splits in each language.
+Our strong baseline is the multilingual Detoxify model~\citep{detoxify}, which uses an XLM--RoBERTa encoder~\citep{xlmr} to produce toxicity probabilities. We load the pretrained \texttt{Detoxify("multilingual")} checkpoint and apply it to our validation and test splits in each language. For each language, we obtain a score $\hat{p}_i$ for every comment, select a decision threshold on the validation set to maximize F1, and then evaluate ROC--AUC and F1 on the test set.
 
-For each language, we:
-
-\begin{itemize}
-    \item run Detoxify to obtain a toxicity probability $\hat{p}_i$ for each comment;
-    \item tune a threshold on the validation set to maximize F1;
-    \item evaluate on the test set using the same ROC--AUC and F1 metrics as above.
-\end{itemize}
 
 Table~\ref{tab:detoxify} reports the resulting performance.
 
