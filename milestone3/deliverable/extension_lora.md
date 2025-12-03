@@ -1,5 +1,5 @@
 ````markdown
-# Milestone 3 Extension: LoRA Fine-Tuning for Multilingual Toxicity Detection
+Milestone 3 Extension: LoRA Fine-Tuning for Multilingual Toxicity Detection
 
 This document explains how to use the **LoRA-based fine-tuning extension** for our multilingual toxicity detection project.
 
