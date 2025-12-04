@@ -21,7 +21,7 @@ model:
   base_model_name: "xlm-roberta-base"   # same as M2 base_model
 
   # Tokenization max length (you used 512 in M2)
-  max_length: 521
+  max_length: 512
 
 # -------------------------
 # Training configuration
