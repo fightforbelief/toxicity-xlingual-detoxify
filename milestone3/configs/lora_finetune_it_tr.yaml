@@ -7,7 +7,7 @@ data:
 
   # Per-language subfolders assumed:
   # data/processed/en/train.csv, val.csv, etc.
-  languages: ["it", "tr"]
+  languages: ["tr"]
 
   # Column names in train.csv / val.csv
   text_col: "comment_text"
