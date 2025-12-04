@@ -1,0 +1,38 @@
+# -------------------------
+# Data configuration
+# -------------------------
+data:
+  # Use the same processed dir & languages as M2
+  processed_dir: "data/processed"
+
+  # Per-language subfolders assumed:
+  # data/processed/en/train.csv, val.csv, etc.
+  languages: ["it"]
+
+  # Column names in train.csv / val.csv
+  text_col: "comment_text"
+  label_col: "toxic"
+
+# -------------------------
+# Model configuration
+# -------------------------
+model:
+  # Underlying HF checkpoint to LoRA-finetune
+  base_model_name: "xlm-roberta-base"   # same as M2 base_model
+
+  # Tokenization max length (you used 512 in M2)
+  max_length: 521
+
+# -------------------------
+# Training configuration
+# -------------------------
+training:
+  # Where per-language LoRA runs will be stored
+  # Final adapters go in: output/runs/lora/{lang}/lora_adapter
+  output_dir: "output/runs/lora"
+
+  # Hyperparameters (mirroring M2)
+  batch_size: 16        # per_device_train_batch_size / eval_batch_size
+  lr: 2e-5              # learning_rate
+  epochs: 3             # num_train_epochs
+  weight_decay: 0.01
