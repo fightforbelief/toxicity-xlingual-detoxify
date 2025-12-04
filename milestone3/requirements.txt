@@ -1,0 +1,19 @@
+# -------- Core scientific stack (NumPy 1.x to avoid ABI conflicts) --------
+numpy<2.0
+pandas>=2.0,<2.2
+scikit-learn>=1.4
+
+# -------- PyTorch (with MPS support) --------
+# Do NOT specify version here; pip will fetch the correct wheel for Mac MPS
+torch
+torchvision
+torchaudio
+
+# -------- HuggingFace ecosystem --------
+transformers>=4.44.0   # safe for PEFT
+datasets>=2.14,<2.20
+peft>=0.8.0
+
+# -------- Utilities --------
+tqdm>=4.66
+pyyaml>=6.0
