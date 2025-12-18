@@ -1,0 +1,120 @@
+# Configuration for Hard Sample Mining Extension
+# Milestone 4: Active Learning / Hard Sample Mining
+
+# Data configuration
+data:
+  # Path to processed data with train/val/test splits
+  processed_dir: "data/processed"
+  
+  # Languages to train on
+  languages:
+    - es  # Spanish
+    - it  # Italian
+    - tr  # Turkish
+  
+  # Column names in CSV files
+  text_col: "comment_text"
+  label_col: "toxic"
+  
+  # Raw data directory (for baseline predictions if needed)
+  raw_dir: "data/raw"
+
+# Model configuration
+model:
+  # Base model to use
+  base_model_name: "xlm-roberta-base"
+  
+  # Whether to use Detoxify's pretrained checkpoint instead of vanilla XLM-R
+  # Detoxify checkpoint is already fine-tuned on toxicity data
+  use_detoxify_checkpoint: true
+  
+  # Maximum sequence length
+  max_length: 256
+  
+  # LoRA configuration
+  lora:
+    r: 8                    # LoRA rank
+    alpha: 16               # LoRA alpha (scaling factor)
+    target_modules:         # Which modules to apply LoRA to
+      - query
+      - key
+      - value
+    dropout: 0.1            # LoRA dropout
+    bias: "none"            # Bias training strategy
+
+# Training configuration
+training:
+  # Output directory for checkpoints and adapters
+  output_dir: "output/runs/hard_sample_lora"
+  
+  # Training hyperparameters
+  batch_size: 16            # Adjust based on GPU memory
+  learning_rate: 2e-5       # Learning rate
+  num_epochs: 3             # Number of training epochs
+  weight_decay: 0.01        # Weight decay for regularization
+  
+  # Logging and evaluation
+  logging_steps: 50
+  eval_steps: 100
+  save_steps: 500
+  save_total_limit: 2
+  
+  # Optimization
+  fp16: true                # Use mixed precision (if GPU available)
+
+# Hard Sample Mining configuration
+hard_sample_mining:
+  # Whether to use hard sample mining
+  enabled: true
+  
+  # Loss function type: "weighted_bce", "focal", "bce"
+  # - "weighted_bce": BCE with per-sample weights
+  # - "focal": Focal Loss (automatically focuses on hard examples)
+  # - "bce": Standard BCE (no special handling)
+  loss_type: "weighted_bce"
+  
+  # Focal Loss parameters (only used if loss_type = "focal")
+  focal_alpha: 0.25         # Weight for positive class
+  focal_gamma: 2.0          # Focusing parameter (higher = more focus on hard examples)
+  
+  # Sample weight parameters (for identify_hard_samples.py)
+  uncertainty_threshold: 0.15     # |prob - 0.5| <= threshold
+  confidence_threshold: 0.8       # High confidence threshold
+  
+  # Weight multipliers
+  uncertain_weight: 2.0           # Weight for uncertain samples
+  misclassified_weight: 3.0       # Weight for misclassified samples
+  high_conf_error_weight: 5.0     # Weight for high-confidence errors
+  minority_weight: 1.5            # Weight for minority class (toxic)
+  boost_minority: false           # Whether to boost minority class
+  
+  # Weight normalization
+  normalize_weights: true         # Normalize weights to mean=1.0
+
+# Evaluation configuration
+evaluation:
+  # Output directory for predictions
+  output_dir: "output/predictions"
+  
+  # Prediction settings
+  run_tag: "hard_sample"    # Prefix for prediction files
+  threshold: 0.5            # Decision threshold
+  
+  # Metrics to compute
+  metrics:
+    - roc_auc
+    - f1
+    - precision
+    - recall
+    - accuracy
+
+# Baseline configuration (for identifying hard samples)
+baseline:
+  # Path to baseline predictions (from strong baseline or detoxify)
+  # Format: data/baseline_predictions/detoxify_{lang}_train.csv
+  pred_dir: "data/baseline_predictions"
+  pred_prefix: "detoxify"   # Prefix of baseline prediction files
+  
+  # If baseline predictions don't exist, run this command first:
+  # python generate_train_baseline_predictions.py --languages es it tr
+

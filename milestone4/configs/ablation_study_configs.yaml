@@ -1,0 +1,183 @@
+# Ablation Study Configurations
+# Use these configs to understand what contributes to improvements
+
+# =============================================================================
+# Config 1: Baseline LoRA (no hard mining) - Control Group
+# =============================================================================
+baseline_lora:
+  description: "Standard LoRA fine-tuning without hard sample mining"
+  hard_sample_mining:
+    enabled: false
+    loss_type: "bce"  # Standard BCE, no weighting
+  training:
+    output_dir: "output/runs/ablation/baseline_lora"
+  evaluation:
+    run_tag: "ablation_baseline"
+
+# =============================================================================
+# Config 2: Weighted BCE (our main approach)
+# =============================================================================
+weighted_bce:
+  description: "Hard sample mining with weighted BCE loss"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "weighted_bce"
+    uncertain_weight: 2.0
+    misclassified_weight: 3.0
+    high_conf_error_weight: 5.0
+  training:
+    output_dir: "output/runs/ablation/weighted_bce"
+  evaluation:
+    run_tag: "ablation_weighted_bce"
+
+# =============================================================================
+# Config 3: Focal Loss Only
+# =============================================================================
+focal_loss:
+  description: "Focal loss without manual sample weighting"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "focal"
+    focal_alpha: 0.25
+    focal_gamma: 2.0
+  training:
+    output_dir: "output/runs/ablation/focal_loss"
+  evaluation:
+    run_tag: "ablation_focal"
+
+# =============================================================================
+# Config 4: Conservative Weights
+# =============================================================================
+conservative_weights:
+  description: "Lower weight multipliers (more conservative)"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "weighted_bce"
+    uncertain_weight: 1.5
+    misclassified_weight: 2.0
+    high_conf_error_weight: 3.0
+  training:
+    output_dir: "output/runs/ablation/conservative"
+  evaluation:
+    run_tag: "ablation_conservative"
+
+# =============================================================================
+# Config 5: Aggressive Weights
+# =============================================================================
+aggressive_weights:
+  description: "Higher weight multipliers (more aggressive)"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "weighted_bce"
+    uncertain_weight: 3.0
+    misclassified_weight: 5.0
+    high_conf_error_weight: 10.0
+  training:
+    output_dir: "output/runs/ablation/aggressive"
+  evaluation:
+    run_tag: "ablation_aggressive"
+
+# =============================================================================
+# Config 6: Focal Loss + Manual Weights (double emphasis)
+# =============================================================================
+focal_plus_weights:
+  description: "Combine focal loss with manual sample weights"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "focal"
+    focal_alpha: 0.25
+    focal_gamma: 2.0
+    # Still use sample weights on top of focal loss
+    uncertain_weight: 1.5
+    misclassified_weight: 2.0
+    high_conf_error_weight: 3.0
+  training:
+    output_dir: "output/runs/ablation/focal_plus_weights"
+  evaluation:
+    run_tag: "ablation_focal_plus"
+
+# =============================================================================
+# Config 7: Minority Class Boosting
+# =============================================================================
+minority_boost:
+  description: "Boost toxic (minority) class in addition to hard samples"
+  hard_sample_mining:
+    enabled: true
+    loss_type: "weighted_bce"
+    uncertain_weight: 2.0
+    misclassified_weight: 3.0
+    high_conf_error_weight: 5.0
+    boost_minority: true
+    minority_weight: 2.0
+  training:
+    output_dir: "output/runs/ablation/minority_boost"
+  evaluation:
+    run_tag: "ablation_minority_boost"
+
+# =============================================================================
+# Config 8: Vanilla XLM-R (not Detoxify checkpoint)
+# =============================================================================
+vanilla_xlmr:
+  description: "Start from vanilla XLM-R instead of Detoxify"
+  model:
+    use_detoxify_checkpoint: false
+  hard_sample_mining:
+    enabled: true
+    loss_type: "weighted_bce"
+    uncertain_weight: 2.0
+    misclassified_weight: 3.0
+    high_conf_error_weight: 5.0
+  training:
+    output_dir: "output/runs/ablation/vanilla_xlmr"
+  evaluation:
+    run_tag: "ablation_vanilla_xlmr"
+
+# =============================================================================
+# How to Use These Configs
+# =============================================================================
+# 
+# Method 1: Merge with main config
+# Copy the desired section and merge it with hard_sample_config.yaml
+#
+# Method 2: Create separate config files
+# Extract each section into its own YAML file:
+#   - ablation_baseline_lora.yaml
+#   - ablation_weighted_bce.yaml
+#   - etc.
+#
+# Method 3: Override in command line
+# Modify config values directly when running:
+#   python hard_sample_finetune.py \
+#       --config configs/hard_sample_config.yaml \
+#       --loss_type focal \
+#       --output_dir output/runs/ablation/focal_loss
+#
+# =============================================================================
+# Recommended Ablation Study Order
+# =============================================================================
+#
+# 1. Baseline LoRA (no hard mining) - Establishes baseline
+# 2. Weighted BCE (our method) - Main approach
+# 3. Focal Loss - Alternative approach
+# 4. Conservative vs Aggressive - Weight sensitivity
+#
+# Compare results to understand:
+# - Does hard mining help? (1 vs 2)
+# - Which loss is better? (2 vs 3)
+# - How sensitive to weights? (2 vs 4 vs 5)
+#
+# =============================================================================
+# Expected Results Pattern
+# =============================================================================
+#
+# Baseline LoRA:           ROC-AUC ~ 0.90
+# Weighted BCE:            ROC-AUC ~ 0.92  (+0.02)
+# Focal Loss:              ROC-AUC ~ 0.91  (+0.01)
+# Conservative:            ROC-AUC ~ 0.91  (+0.01)
+# Aggressive:              ROC-AUC ~ 0.92  (+0.02, may overfit)
+# Focal + Weights:         ROC-AUC ~ 0.92  (+0.02)
+# Minority Boost:          ROC-AUC ~ 0.92, Higher Recall
+# Vanilla XLM-R:           ROC-AUC ~ 0.88  (worse baseline)
+#
+
+

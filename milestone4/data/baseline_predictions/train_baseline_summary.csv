@@ -1,0 +1,4 @@
+language,n_samples,n_toxic,roc_auc,f1,output_path
+es,1749,296,0.9234598500771934,0.636094674556213,..\milestone2\output\predictions\detoxify_es_train.csv
+it,1749,341,0.8978043355105305,0.628140703517588,..\milestone2\output\predictions\detoxify_it_train.csv
+tr,2099,224,0.9828619047619047,0.7860696517412935,..\milestone2\output\predictions\detoxify_tr_train.csv

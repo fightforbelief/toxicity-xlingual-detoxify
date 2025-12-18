@@ -1,0 +1,9 @@
+Language: es
+Base model: xlm-roberta-base
+Use Detoxify checkpoint: True
+Loss type: weighted_bce
+Training samples: 1749
+Validation samples: 250
+Epochs: 3
+Learning rate: 2e-05
+Batch size: 16
